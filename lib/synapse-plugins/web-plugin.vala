@@ -47,22 +47,21 @@ namespace Synapse {
             private string search_uri;
 
             private static Gee.HashMap<string, string> engine_names_by_bang;
-            private static Gee.HashMap<string, string> engine_uris_by_name;
+            private static Gee.HashMap<string, SearchEngine?> engines_by_name;
 
             public Result (string search) {
                 bang = get_bang(search);
-                query = bang == "" ? search : search.substring(bang.char_count() + 1);
-                string _engine = get_engine_name(query);
-                string _engine_uri = engine_uris_by_name[_engine];
-                search_uri = _engine_uri.replace("{query}", Uri.escape_string(query));
+                query = search.substring(bang.char_count()).strip();
+                string _engine_name = get_engine_name(bang);
+                SearchEngine _engine = engines_by_name[_engine_name];
+                search_uri = _engine.uri_template.replace("{query}", Uri.escape_string(query));
 
                 string _title = "";
                 string _icon_name = "";
 
                 appinfo = AppInfo.get_default_for_type ("x-scheme-handler/https", false);
                 if (appinfo != null) {
-                    // TRANSLATORS: The first %s is the search query, the second is the name of the search engine.
-                    _title = _("Search the web for %s with %s".printf (query, _engine));
+                    _title = _engine.phrase_template.printf (query);
                     _icon_name = appinfo.get_icon ().to_string ();
                 }
 
@@ -88,36 +87,60 @@ namespace Synapse {
                 }
             }
 
+            struct SearchEngine {
+                string uri_template;
+                string phrase_template;
+            }
+
             static construct {
                 engine_names_by_bang = new Gee.HashMap<string, string>();
                 engine_names_by_bang["!g"] = "Google";
                 engine_names_by_bang["!b"] = "Bing";
                 engine_names_by_bang["!d"] = "DuckDuckGo";
-                engine_names_by_bang["!y"] = "Yahoo";
+                engine_names_by_bang["!y"] = "Yahoo!";
                 engine_names_by_bang["!w"] = "Wikipedia";
 
-                engine_uris_by_name = new Gee.HashMap<string, string>();
-                engine_uris_by_name["Google"] = "https://www.google.com/search?q={query}";
-                engine_uris_by_name["Bing"] = "https://www.bing.com/search?q={query}";
-                engine_uris_by_name["DuckDuckGo"] = "https://duckduckgo.com/?q={query}";
-                engine_uris_by_name["Yahoo"] = "https://search.yahoo.com/search?p={query}";
-                engine_uris_by_name["Wikipedia"] = "https://wikipedia.org/wiki/Special:Search/{query}";
+                engines_by_name = new Gee.HashMap<string, SearchEngine?>();
+                engines_by_name["Google"] = SearchEngine () {
+                    uri_template = _("https://www.google.com/search?q={query}"),
+                    phrase_template = _("Search the web for %s with Google")
+                };
+                engines_by_name["Bing"] = SearchEngine () {
+                    uri_template = _("https://www.bing.com/search?q={query}"),
+                    phrase_template = _("Search the web for %s with Google")
+                };
+                engines_by_name["DuckDuckGo"] = SearchEngine () {
+                    uri_template = _("https://duckduckgo.com/?q={query}"),
+                    phrase_template = _("Search the web for %s with DuckDuckGo")
+                };
+                engines_by_name["Yahoo!"] = SearchEngine () {
+                    uri_template = _("https://search.yahoo.com/search?p={query}"),
+                    phrase_template = _("Search the web for %s with Yahoo!")
+                };
+                engines_by_name["Wikipedia"] = SearchEngine () {
+                    uri_template = _("https://wikipedia.org/wiki/Special:Search/{query}"),
+                    phrase_template = _("Search Wikipedia for %s")
+                };
             }
 
             private string get_bang(string query) {
+                if (query.char_count() < 2) {
+                    return "";
+                }
                 string result = "";
                 unichar c;
-                for (int i = 0; query.get_next_char (ref i, out c);) {
-                    if (i == 0 && c != '!') {
-                        // Bangs start with !
+                int i = 0;
+                for (int count = 0; query.get_next_char (ref i, out c); count++) {
+                    // Bangs start with !
+                    if (count == 0 && c != '!') {
                         return "";
                     }
-                    if (i == 1 && c == '!') {
-                        // A string staring with !! is not considered a bang
+                    // A string staring with !! is not considered a bang
+                    if (count == 1 && c == '!') {
                         return "";
                     }
+                    // A space marks the end of the bang and the beginning of the query
                     if (c == ' ') {
-                        // A space marks the end of the bang and the beginning of the query
                         return result;
                     }
                     result += c.to_string();
@@ -126,7 +149,7 @@ namespace Synapse {
             }
 
             private string get_engine_name(string bang) {
-                return bang != null && engine_names_by_bang.has_key(bang) ? engine_names_by_bang[bang] : "DuckDuckGo";
+                return engine_names_by_bang.has_key(bang) ? engine_names_by_bang[bang] : "DuckDuckGo";
             }
         }
 
@@ -144,9 +167,7 @@ namespace Synapse {
                                                                     _("Web"),
                                                                     _("Search the web"),
                                                                     "web-browser",
-                                                                    register_plugin,
-                                                                    has_browser,
-                                                                    _("No web browser found"));
+                                                                    register_plugin);
 }
 
         static construct {
@@ -163,7 +184,7 @@ namespace Synapse {
             }
             ResultSet results = new ResultSet ();
             Result search_result = new Result (query.query_string);
-            results.add (search_result, Match.Score.AVERAGE);
+            results.add (search_result, Match.Score.GOOD);
             return results;
         }
     }
