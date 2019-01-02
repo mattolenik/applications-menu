@@ -54,7 +54,7 @@ namespace Synapse {
                 appinfo = AppInfo.get_default_for_type ("x-scheme-handler/https", false);
                 if (appinfo != null) {
                     // TRANSLATORS: The first %s is the search query, the second is the name of the search engine.
-                    _title = _("Search for %s with %s".printf (query, _engine_name));
+                    _title = _("Search the web for %s with %s".printf (query, _engine_name));
                     _icon_name = appinfo.get_icon ().to_string ();
                 }
 
