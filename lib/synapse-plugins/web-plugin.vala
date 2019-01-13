@@ -145,7 +145,7 @@ namespace Synapse {
             }
             ResultSet results = new ResultSet ();
             Result search_result = new Result (query.query_string);
-            results.add (search_result, Match.Score.GOOD);
+            results.add (search_result, Match.Score.BELOW_AVERAGE);
             return results;
         }
     }
