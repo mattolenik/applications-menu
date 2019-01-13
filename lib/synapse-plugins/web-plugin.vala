@@ -107,7 +107,7 @@ namespace Synapse {
                 };
                 engines_by_name["Bing"] = SearchEngine () {
                     uri_template = _("https://www.bing.com/search?q={query}"),
-                    phrase_template = _("Search the web for %s with Google")
+                    phrase_template = _("Search the web for %s with Bing")
                 };
                 engines_by_name["DuckDuckGo"] = SearchEngine () {
                     uri_template = _("https://duckduckgo.com/?q={query}"),
