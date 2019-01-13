@@ -124,12 +124,13 @@ namespace Synapse {
                 has_browser = true;
             }
 
-            DataSink.PluginRegistry.get_default ().register_plugin (typeof (WebPlugin),
-                                                                    _("Web"),
-                                                                    _("Search the web"),
-                                                                    "web-browser",
-                                                                    register_plugin);
-}
+            DataSink.PluginRegistry.get_default ().register_plugin (
+                typeof (WebPlugin),
+                _("Web"),
+                _("Search the web"),
+                "web-browser",
+                register_plugin);
+        }
 
         static construct {
             register_plugin ();
