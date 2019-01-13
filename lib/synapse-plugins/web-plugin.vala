@@ -43,16 +43,13 @@ namespace Synapse {
 
             private AppInfo? appinfo;
             private string query;
-            private string bang;
             private string search_uri;
 
-            private static Gee.HashMap<string, string> engine_names_by_bang;
             private static Gee.HashMap<string, SearchEngine?> engines_by_name;
 
             public Result (string search) {
-                bang = get_bang(search);
-                query = search.substring(bang.char_count()).strip();
-                string _engine_name = get_engine_name(bang);
+                query = search;
+                string _engine_name = "Google";
                 SearchEngine _engine = engines_by_name[_engine_name];
                 search_uri = _engine.uri_template.replace("{query}", Uri.escape_string(query));
 
@@ -93,13 +90,6 @@ namespace Synapse {
             }
 
             static construct {
-                engine_names_by_bang = new Gee.HashMap<string, string>();
-                engine_names_by_bang["!g"] = "Google";
-                engine_names_by_bang["!b"] = "Bing";
-                engine_names_by_bang["!d"] = "DuckDuckGo";
-                engine_names_by_bang["!y"] = "Yahoo!";
-                engine_names_by_bang["!w"] = "Wikipedia";
-
                 engines_by_name = new Gee.HashMap<string, SearchEngine?>();
                 engines_by_name["Google"] = SearchEngine () {
                     uri_template = _("https://www.google.com/search?q={query}"),
@@ -121,35 +111,6 @@ namespace Synapse {
                     uri_template = _("https://wikipedia.org/wiki/Special:Search/{query}"),
                     phrase_template = _("Search Wikipedia for %s")
                 };
-            }
-
-            private string get_bang(string query) {
-                if (query.char_count() < 2) {
-                    return "";
-                }
-                string result = "";
-                unichar c;
-                int i = 0;
-                for (int count = 0; query.get_next_char (ref i, out c); count++) {
-                    // Bangs start with !
-                    if (count == 0 && c != '!') {
-                        return "";
-                    }
-                    // A string staring with !! is not considered a bang
-                    if (count == 1 && c == '!') {
-                        return "";
-                    }
-                    // A space marks the end of the bang and the beginning of the query
-                    if (c == ' ') {
-                        return result;
-                    }
-                    result += c.to_string();
-                }
-                return result;
-            }
-
-            private string get_engine_name(string bang) {
-                return engine_names_by_bang.has_key(bang) ? engine_names_by_bang[bang] : "DuckDuckGo";
             }
         }
 
