@@ -26,17 +26,4 @@ public class ApplicationsMenuSettings : Granite.Services.Settings {
     public ApplicationsMenuSettings () {
         base ("io.elementary.desktop.wingpanel.applications-menu");
     }
-
-    protected override void verify (string key) {
-        switch (key) {
-            case "search-engine-metadata":
-                if (search_engine_metadata.length < 3) {
-                    search_engine_metadata = new string[] {
-                        "duckduckgo",
-                        "https://duckduckgo.com/?q={query}",
-                        "Search for %s with DuckDuckGo"};
-                }
-                break;
-        }
-    }
 }

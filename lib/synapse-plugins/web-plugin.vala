@@ -48,9 +48,16 @@ namespace Synapse {
             public Result (string search) {
                 query = search;
                 var settings = new ApplicationsMenuSettings ();
-                var engine = settings.search_engine_metadata;
-                var query_template = engine[1];
-                var description_template = engine[2];
+                var metadata = settings.search_engine_metadata;
+                if (metadata == null || metadata.length < 3) {
+                    metadata = {
+                        "duckduckgo",
+                        "https://duckduckgo.com/?q={query}",
+                        "Search for %s with DuckDuckGo"
+                    };
+                }
+                var query_template = metadata[1];
+                var description_template = metadata[2];
                 search_uri = query_template.replace ("{query}", Uri.escape_string (query));
 
                 string _title = "";
