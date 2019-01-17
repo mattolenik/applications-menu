@@ -1,4 +1,5 @@
 synapse_plugins_sources = [
+	'applications-menu-settings.vala',
     'calculator-plugin.vala',
     'command-plugin.vala',
     'desktop-file-plugin.vala',
@@ -15,6 +16,7 @@ synapse_plugins_deps = [
     json_glib_dep,
     gee_dep,
     gtk_dep,
+    granite_dep,
     switchboard_dep,
     synapse_core_dep
 ]

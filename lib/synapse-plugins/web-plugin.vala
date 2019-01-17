@@ -45,20 +45,20 @@ namespace Synapse {
             private string query;
             private string search_uri;
 
-            private static Gee.HashMap<string, SearchEngine?> engines_by_name;
-
             public Result (string search) {
                 query = search;
-                string _engine_name = "Google";
-                SearchEngine _engine = engines_by_name[_engine_name];
-                search_uri = _engine.uri_template.replace("{query}", Uri.escape_string(query));
+                var settings = new ApplicationsMenuSettings ();
+                var engine = settings.search_engine_metadata;
+                var query_template = engine[1];
+                var description_template = engine[2];
+                search_uri = query_template.replace ("{query}", Uri.escape_string (query));
 
                 string _title = "";
                 string _icon_name = "";
 
                 appinfo = AppInfo.get_default_for_type ("x-scheme-handler/https", false);
                 if (appinfo != null) {
-                    _title = _engine.phrase_template.printf (query);
+                    _title = description_template.printf (query);
                     _icon_name = appinfo.get_icon ().to_string ();
                 }
 
@@ -82,35 +82,6 @@ namespace Synapse {
                 } catch (Error e) {
                     warning ("%s\n", e.message);
                 }
-            }
-
-            struct SearchEngine {
-                string uri_template;
-                string phrase_template;
-            }
-
-            static construct {
-                engines_by_name = new Gee.HashMap<string, SearchEngine?>();
-                engines_by_name["Google"] = SearchEngine () {
-                    uri_template = _("https://www.google.com/search?q={query}"),
-                    phrase_template = _("Search the web for %s with Google")
-                };
-                engines_by_name["Bing"] = SearchEngine () {
-                    uri_template = _("https://www.bing.com/search?q={query}"),
-                    phrase_template = _("Search the web for %s with Bing")
-                };
-                engines_by_name["DuckDuckGo"] = SearchEngine () {
-                    uri_template = _("https://duckduckgo.com/?q={query}"),
-                    phrase_template = _("Search the web for %s with DuckDuckGo")
-                };
-                engines_by_name["Yahoo!"] = SearchEngine () {
-                    uri_template = _("https://search.yahoo.com/search?p={query}"),
-                    phrase_template = _("Search the web for %s with Yahoo!")
-                };
-                engines_by_name["Wikipedia"] = SearchEngine () {
-                    uri_template = _("https://wikipedia.org/wiki/Special:Search/{query}"),
-                    phrase_template = _("Search Wikipedia for %s")
-                };
             }
         }
 

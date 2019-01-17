@@ -16,14 +16,27 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-public class Slingshot.Settings : Granite.Services.Settings {
+public class ApplicationsMenuSettings : Granite.Services.Settings {
     public int columns { get; set; }
     public int rows { get; set; }
     public bool use_category { get; set; }
     public string screen_resolution { get; set; }
     public string[] search_engine_metadata { get; set; }
 
-    public Settings () {
+    public ApplicationsMenuSettings () {
         base ("io.elementary.desktop.wingpanel.applications-menu");
+    }
+
+    protected override void verify (string key) {
+        switch (key) {
+            case "search-engine-metadata":
+                if (search_engine_metadata.length < 3) {
+                    search_engine_metadata = new string[] {
+                        "duckduckgo",
+                        "https://duckduckgo.com/?q={query}",
+                        "Search for %s with DuckDuckGo"};
+                }
+                break;
+        }
     }
 }
