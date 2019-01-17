@@ -48,7 +48,7 @@ namespace Synapse {
             public Result (string search) {
                 query = search;
                 var settings = new ApplicationsMenuSettings ();
-                var metadata = settings.search_engine_metadata;
+                var metadata = settings.search_engine;
                 if (metadata == null || metadata.length < 3) {
                     metadata = {
                         "duckduckgo",

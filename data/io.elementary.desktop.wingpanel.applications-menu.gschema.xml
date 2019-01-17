@@ -20,9 +20,9 @@
         <summary>The last resolution of the screen</summary>
         <description>This value makes slingshot able to adapt to each screen.</description>
     </key>
-    <key name="search-engine-metadata" type="as">
+    <key name="search-engine" type="as">
         <default>[]</default>
-        <summary>An array of search engine metadata, e.g. ["google", "https://google.com/search?q={query}", "Search Google for %s"], or empty to use the default.</summary>
+        <summary>An array representing a tuple of search engine metadata, e.g. ["google", "https://google.com/search?q={query}", "Search Google for %s"]</summary>
         <description>Metadata of the search engine being used by the Applications menu for web search.</description>
     </key>
     </schema>
