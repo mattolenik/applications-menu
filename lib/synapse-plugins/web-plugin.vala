@@ -58,17 +58,22 @@ namespace Synapse {
                     metadata = new string[] { default_engine };
                 }
                 string engine_id = metadata[0];
-                string query_template;
-                string description_template;
+                string query_template = "";
+                string description_template = "";
                 // ID only, use built-in metadata.
                 if (metadata.length == 1) {
                     query_template = search_engines[engine_id].query_template;
                     description_template = search_engines[engine_id].description_template;
                 }
                 // ID plus metadata found, use that metadata. Used for custom search engines.
-                else {
+                else if (metadata.length > 1) {
                     query_template = metadata[1];
-                    description_template = metadata[2];
+                    var parts = uri_regex.split(query_template);
+                    // For custom search, just extract the domain name of the custom URL and use that for the name.
+                    var domain_name = parts[2];
+                    description_template = _("Search for %s on") + " " + domain_name;
+                } else {
+                    debug("ERROR: bad metadata");
                 }
 
                 search_uri = query_template.replace ("{query}", Uri.escape_string (query));
@@ -109,6 +114,8 @@ namespace Synapse {
 
         private const string default_engine = "duckduckgo";
 
+        private static Regex uri_regex;
+
         static void register_plugin () {
             appinfo = AppInfo.get_default_for_type ("x-scheme-handler/https", false);
 
@@ -121,6 +128,12 @@ namespace Synapse {
         }
 
         static construct {
+            try {
+            uri_regex = new Regex ("""(\w+:\/\/)?([^/:\n]+)""");
+            } catch (RegexError e) {
+                debug(e.message);
+            }
+
             search_engines = new Gee.HashMap<string, SearchEngine?>();
             search_engines["google"] = new SearchEngine () {
                 query_template = _("https://www.google.com/search?q={query}"),
