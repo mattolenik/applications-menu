@@ -55,15 +55,11 @@ namespace Synapse {
                 var settings = new ApplicationsMenuSettings ();
                 var metadata = settings.search_engine;
                 if (metadata == null || metadata.length == 0) {
-                    metadata = {
-                        "duckduckgo",
-                        "https://duckduckgo.com/?q={query}",
-                        "Search for %s with DuckDuckGo"
-                    };
+                    metadata = new string[] { default_engine };
                 }
+                string engine_id = metadata[0];
                 string query_template;
                 string description_template;
-                string engine_id = metadata[0];
                 // ID only, use built-in metadata.
                 if (metadata.length == 1) {
                     query_template = search_engines[engine_id].query_template;
@@ -76,12 +72,11 @@ namespace Synapse {
                 }
 
                 search_uri = query_template.replace ("{query}", Uri.escape_string (query));
-                string _title = "";
+                string _title = description_template.printf (query);
                 string _icon_name = "";
 
                 appinfo = AppInfo.get_default_for_type ("x-scheme-handler/https", false);
                 if (appinfo != null) {
-                    _title = description_template.printf (query);
                     _icon_name = appinfo.get_icon ().to_string ();
                 }
 
@@ -112,13 +107,10 @@ namespace Synapse {
 
         private static Gee.HashMap<string, SearchEngine> search_engines;
 
+        private const string default_engine = "duckduckgo";
+
         static void register_plugin () {
-            bool has_browser = false;
             appinfo = AppInfo.get_default_for_type ("x-scheme-handler/https", false);
-            // Only register the plugin if there's a web browser installed (which there almost always will be).
-            if (appinfo == null) {
-                has_browser = true;
-            }
 
             DataSink.PluginRegistry.get_default ().register_plugin (
                 typeof (WebPlugin),
