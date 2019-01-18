@@ -22,6 +22,11 @@
 */
 
 namespace Synapse {
+    class SearchEngine {
+        public string query_template;
+        public string description_template;
+    }
+
     public class WebPlugin: Object, Activatable, ItemProvider {
 
         public bool enabled { get; set; default = true; }
@@ -49,17 +54,28 @@ namespace Synapse {
                 query = search;
                 var settings = new ApplicationsMenuSettings ();
                 var metadata = settings.search_engine;
-                if (metadata == null || metadata.length < 3) {
+                if (metadata == null || metadata.length == 0) {
                     metadata = {
                         "duckduckgo",
                         "https://duckduckgo.com/?q={query}",
                         "Search for %s with DuckDuckGo"
                     };
                 }
-                var query_template = metadata[1];
-                var description_template = metadata[2];
-                search_uri = query_template.replace ("{query}", Uri.escape_string (query));
+                string query_template;
+                string description_template;
+                string engine_id = metadata[0];
+                // ID only, use built-in metadata.
+                if (metadata.length == 1) {
+                    query_template = search_engines[engine_id].query_template;
+                    description_template = search_engines[engine_id].description_template;
+                }
+                // ID plus metadata found, use that metadata. Used for custom search engines.
+                else {
+                    query_template = metadata[1];
+                    description_template = metadata[2];
+                }
 
+                search_uri = query_template.replace ("{query}", Uri.escape_string (query));
                 string _title = "";
                 string _icon_name = "";
 
@@ -94,6 +110,8 @@ namespace Synapse {
 
         private static AppInfo? appinfo;
 
+        private static Gee.HashMap<string, SearchEngine> search_engines;
+
         static void register_plugin () {
             bool has_browser = false;
             appinfo = AppInfo.get_default_for_type ("x-scheme-handler/https", false);
@@ -111,6 +129,31 @@ namespace Synapse {
         }
 
         static construct {
+            search_engines = new Gee.HashMap<string, SearchEngine?>();
+            search_engines["google"] = new SearchEngine () {
+                query_template = _("https://www.google.com/search?q={query}"),
+                description_template = _("Search the web for %s with Google")
+            };
+            search_engines["bing"] = new SearchEngine () {
+                query_template = _("https://www.bing.com/search?q={query}"),
+                description_template = _("Search the web for %s with Bing")
+            };
+            search_engines["duckduckgo"] = new SearchEngine () {
+                query_template = _("https://duckduckgo.com/?q={query}"),
+                description_template = _("Search the web for %s with DuckDuckGo")
+            };
+            search_engines["yahoo"] = new SearchEngine () {
+                query_template = _("https://search.yahoo.com/search?p={query}"),
+                description_template = _("Search the web for %s with Yahoo!")
+            };
+            search_engines["yandex"] = new SearchEngine () {
+                query_template = _("https://yandex.com/search/?text={query}"),
+                description_template = _("Search the web for %s with Yandex")
+            };
+            search_engines["baidu"] = new SearchEngine () {
+                query_template = _("https://www.baidu.com/s?wd={query}"),
+                description_template = _("Search the web for %s with Baidu")
+            };
             register_plugin ();
         }
 
