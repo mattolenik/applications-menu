@@ -111,10 +111,12 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
             if (engine_id == null || engine_id.chomp () == "" || !search_engines.has_key (engine_id)) {
                 engine_id = DEFAULT_ENGINE_ID;
             }
+            /* For custom search, rather than having the user bother to enter an ID/name for the search engine,
+               simply use the domain name of the provider.
+             */
             if (engine_id == CUSTOM_ENGINE_ID) {
                 var url_template = web_search_custom_url;
                 var parts = uri_regex.split (url_template);
-                // For custom search, just extract the domain name of the custom URL and use that for the name.
                 var domain_name = parts[2];
                 var result = _("Search for %s on") + " " + domain_name;
                 return result;
