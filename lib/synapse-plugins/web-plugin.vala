@@ -96,11 +96,11 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
             }
         }
 
-        private string get_url_template(string engine_id) {
+        private string get_url_template (string engine_id) {
             return engine_id == CUSTOM_ENGINE_ID ? web_search_custom_url : search_engines[engine_id].url_template;
         }
 
-        private string get_description_template(string engine_id) {
+        private string get_description_template (string engine_id) {
             if (engine_id == null || engine_id.chomp () == "") {
                 return DEFAULT_ENGINE_ID;
             }
@@ -109,7 +109,7 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
             }
             else {
                 var url_template = web_search_custom_url;
-                var parts = uri_regex.split(url_template);
+                var parts = uri_regex.split (url_template);
                 // For custom search, just extract the domain name of the custom URL and use that for the name.
                 var domain_name = parts[2];
                 var result = _("Search for %s on") + " " + domain_name;
@@ -138,10 +138,10 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
         try {
             uri_regex = new Regex ("""(\w+:\/\/)?([^/:\n]+)""");
         } catch (RegexError e) {
-            debug(e.message);
+            debug (e.message);
         }
 
-        search_engines = new Gee.HashMap<string, SearchEngine?>();
+        search_engines = new Gee.HashMap<string, SearchEngine?> ();
 
         search_engines["google"] = new SearchEngine () {
             url_template = _("https://www.google.com/search?q={query}"),
@@ -175,7 +175,7 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
     }
 
     public async ResultSet? search (Query query) throws SearchError {
-        if (query.query_string.char_count() < 2) {
+        if (query.query_string.char_count () < 2) {
             return null;
         }
         ResultSet results = new ResultSet ();
