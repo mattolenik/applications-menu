@@ -21,7 +21,6 @@ public class Slingshot.Settings : Granite.Services.Settings {
     public int rows { get; set; }
     public bool use_category { get; set; }
     public string screen_resolution { get; set; }
-    public string[] web_search_engine { get; set; }
 
     public Settings () {
         base ("io.elementary.desktop.wingpanel.applications-menu");

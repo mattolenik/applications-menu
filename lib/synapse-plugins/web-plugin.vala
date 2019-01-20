@@ -36,7 +36,7 @@ namespace Synapse {
         public void deactivate () { }
 
         public class Result : Object, Match {
-            // from Match interface
+            // From Match interface
             public string title { get; construct set; }
             public string description { get; set; }
             public string icon_name { get; construct set; }
@@ -44,64 +44,48 @@ namespace Synapse {
             public string thumbnail_path { get; construct set; }
             public MatchType match_type { get; construct set; }
 
-            public int default_relevancy { get; set; default = 0; }
-
             private AppInfo? appinfo;
+            private GLib.Settings gsettings;
             private string query;
             private string search_uri;
-            private ApplicationsMenuSettings settings;
+            private string web_search_engine_id;
+            private string web_search_custom_url;
+            private bool web_search_enabled;
 
             public Result (string search) {
+                gsettings = new GLib.Settings ("io.elementary.desktop.wingpanel.applications-menu");
+                web_search_engine_id = gsettings.get_string ("web-search-engine-id");
+                web_search_custom_url = gsettings.get_string ("web-search-custom-url");
+                web_search_enabled = gsettings.get_boolean ("web-search-enabled");
                 query = search;
-                settings = new ApplicationsMenuSettings ();
-                if (!settings.web_search_enabled) {
+                appinfo = AppInfo.get_default_for_type ("x-scheme-handler/https", false);
+                if (appinfo == null) {
+                    // No browser found
                     return;
                 }
-                var metadata = settings.web_search_engine;
-                if (metadata == null || metadata.length == 0) {
-                    metadata = new string[] { default_engine };
+                if (!web_search_enabled) {
+                    return;
                 }
-                string engine_id = metadata[0];
-                string query_template = "";
-                string description_template = "";
-                // ID only, use built-in metadata.
-                if (metadata.length == 1) {
-                    query_template = search_engines[engine_id].query_template;
-                    description_template = search_engines[engine_id].description_template;
-                }
-                // ID plus metadata found, use that metadata. Used for custom search engines.
-                else if (metadata.length > 1) {
-                    query_template = metadata[1];
-                    var parts = uri_regex.split(query_template);
-                    // For custom search, just extract the domain name of the custom URL and use that for the name.
-                    var domain_name = parts[2];
-                    description_template = _("Search for %s on") + " " + domain_name;
-                } else {
-                    debug("ERROR: bad metadata");
-                }
+                string engine_id = web_search_engine_id;
+                string query_template = get_query_template (engine_id);
+                string description_template = get_description_template (engine_id);
 
                 search_uri = query_template.replace ("{query}", Uri.escape_string (query));
-                string _title = description_template.printf (query);
-                string _icon_name = "";
 
-                appinfo = AppInfo.get_default_for_type ("x-scheme-handler/https", false);
-                if (appinfo != null) {
-                    _icon_name = appinfo.get_icon ().to_string ();
-                }
-
-                this.title = _title;
-                this.icon_name = _icon_name;
+                this.title = description_template.printf (query);
+                this.icon_name = appinfo.get_icon ().to_string ();
                 this.description = _("Search the web");
                 this.has_thumbnail = false;
                 this.match_type = MatchType.ACTION;
             }
 
             public void execute (Match? match) {
-                if (!settings.web_search_enabled) {
+                if (!web_search_enabled) {
                     return;
                 }
 
                 if (appinfo == null) {
+                    // No browser found
                     return;
                 }
 
@@ -112,6 +96,24 @@ namespace Synapse {
                     appinfo.launch_uris (list, null);
                 } catch (Error e) {
                     warning ("%s\n", e.message);
+                }
+            }
+
+            private string get_query_template(string engine_id) {
+                return engine_id == "custom" ? web_search_custom_url : search_engines[engine_id].query_template;
+            }
+
+            private string get_description_template(string engine_id) {
+                if (engine_id != "custom") {
+                     return search_engines[engine_id].description_template;
+                }
+                else {
+                    var query_template = web_search_custom_url;
+                    var parts = uri_regex.split(query_template);
+                    // For custom search, just extract the domain name of the custom URL and use that for the name.
+                    var domain_name = parts[2];
+                    var result = _("Search for %s on") + " " + domain_name;
+                    return result;
                 }
             }
         }

@@ -1,5 +1,4 @@
 synapse_plugins_sources = [
-	'applications-menu-settings.vala',
     'calculator-plugin.vala',
     'command-plugin.vala',
     'desktop-file-plugin.vala',
