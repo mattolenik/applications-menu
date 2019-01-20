@@ -97,17 +97,21 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
         }
 
         private string get_url_template (string engine_id) {
-            return engine_id == CUSTOM_ENGINE_ID ? web_search_custom_url : search_engines[engine_id].url_template;
+            if (engine_id == CUSTOM_ENGINE_ID) {
+                return web_search_custom_url;
+            }
+            if (!search_engines.has_key (engine_id)) {
+                engine_id = DEFAULT_ENGINE_ID;
+            }
+            return search_engines[engine_id].url_template;
         }
 
         private string get_description_template (string engine_id) {
-            if (engine_id == null || engine_id.chomp () == "") {
-                return DEFAULT_ENGINE_ID;
+            // Protect against invalid gsettings
+            if (engine_id == null || engine_id.chomp () == "" || !search_engines.has_key (engine_id)) {
+                engine_id = DEFAULT_ENGINE_ID;
             }
-            if (engine_id != CUSTOM_ENGINE_ID) {
-                return search_engines[engine_id].description_template;
-            }
-            else {
+            if (engine_id == CUSTOM_ENGINE_ID) {
                 var url_template = web_search_custom_url;
                 var parts = uri_regex.split (url_template);
                 // For custom search, just extract the domain name of the custom URL and use that for the name.
@@ -115,6 +119,7 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
                 var result = _("Search for %s on") + " " + domain_name;
                 return result;
             }
+            return search_engines[engine_id].description_template;
         }
     }
 
