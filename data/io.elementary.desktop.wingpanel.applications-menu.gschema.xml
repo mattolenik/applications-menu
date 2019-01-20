@@ -20,10 +20,17 @@
         <summary>The last resolution of the screen</summary>
         <description>This value makes slingshot able to adapt to each screen.</description>
     </key>
-    <key name="search-engine" type="as">
+    <key name="web-search-engine" type="as">
         <default>["duckduckgo"]</default>
-        <summary>An array representing a tuple of search engine metadata, e.g. ["custom", "https://mysearchuri.com/search?q={query}", "Search for %s with mysearch"]</summary>
+        <summary>
+            An array representing the web search engine choice. [engine_id, query_url] where the
+            second element is optional and used only when engine_id has the value "custom".
+        </summary>
         <description>Metadata of the search engine being used by the Applications menu for web search.</description>
+    </key>
+    <key name="web-search-enabled" type="b">
+        <default>true</default>
+        <summary>Whether or not to enable web search from within the Applications menu.</summary>
     </key>
     </schema>
 </schemalist>

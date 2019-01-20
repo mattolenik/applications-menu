@@ -49,11 +49,15 @@ namespace Synapse {
             private AppInfo? appinfo;
             private string query;
             private string search_uri;
+            private ApplicationsMenuSettings settings;
 
             public Result (string search) {
                 query = search;
-                var settings = new ApplicationsMenuSettings ();
-                var metadata = settings.search_engine;
+                settings = new ApplicationsMenuSettings ();
+                if (!settings.web_search_enabled) {
+                    return;
+                }
+                var metadata = settings.web_search_engine;
                 if (metadata == null || metadata.length == 0) {
                     metadata = new string[] { default_engine };
                 }
@@ -93,6 +97,10 @@ namespace Synapse {
             }
 
             public void execute (Match? match) {
+                if (!settings.web_search_enabled) {
+                    return;
+                }
+
                 if (appinfo == null) {
                     return;
                 }

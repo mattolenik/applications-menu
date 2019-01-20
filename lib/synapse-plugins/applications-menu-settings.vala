@@ -17,11 +17,8 @@
 //
 
 public class ApplicationsMenuSettings : Granite.Services.Settings {
-    public int columns { get; set; }
-    public int rows { get; set; }
-    public bool use_category { get; set; }
-    public string screen_resolution { get; set; }
-    public string[] search_engine { get; set; }
+    public string[] web_search_engine { get; set; }
+    public bool web_search_enabled { get; set; }
 
     public ApplicationsMenuSettings () {
         base ("io.elementary.desktop.wingpanel.applications-menu");
