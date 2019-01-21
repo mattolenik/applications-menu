@@ -91,7 +91,8 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
             if (engine_id == CUSTOM_ENGINE_ID) {
                 return web_search_custom_url;
             }
-            else if (!search_engines.has_key (engine_id)) {
+            /* Fall back to the default in the rare event that the ID is unrecognized. */
+            if (!search_engines.has_key (engine_id)) {
                 engine_id = DEFAULT_ENGINE_ID;
             }
             return search_engines[engine_id].url_template;
