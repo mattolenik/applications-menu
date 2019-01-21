@@ -87,6 +87,9 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
             }
         }
 
+        /* Given an engine_id, find the correct URL template for that search engine.
+         * e.g. "https://example.com/{query}"
+         */
         string get_url_template (string engine_id) {
             if (engine_id == CUSTOM_ENGINE_ID) {
                 return web_search_custom_url;
@@ -98,6 +101,9 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
             return search_engines[engine_id].url_template;
         }
 
+        /* Given an engine_id, find the correct description phrasing template.
+         * This is the string in that UI that looks like "Search for %s on foo"
+         */
         string get_description_template (string engine_id) {
             /* For custom search, rather than having the user bother to enter an ID/name for the search engine,
                simply use the domain name of the provider.
