@@ -60,7 +60,7 @@ namespace Synapse {
                 this.icon_name = _icon_name;
                 this.description = _("Search the app store");
                 this.has_thumbnail = false;
-                this.match_type = MatchType.SEARCH;
+                this.match_type = MatchType.ACTION;
             }
 
             public void execute (Match? match) {

@@ -30,7 +30,7 @@
     </key>
     <key name="web-search-enabled" type="b">
         <default>true</default>
-        <summary>Whether or not to enable web search from within the Applications menu.</summary>
+        <summary>Whether or not to enable Applications menu's web search.</summary>
     </key>
     </schema>
 </schemalist>

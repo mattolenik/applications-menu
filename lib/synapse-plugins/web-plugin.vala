@@ -31,6 +31,8 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
     public void activate () { }
     public void deactivate () { }
 
+    static Settings gsettings = new GLib.Settings ("io.elementary.desktop.wingpanel.applications-menu");
+
     public class Result : Object, Match {
         // From Match interface
         public string title { get; construct set; }
@@ -40,8 +42,7 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
         public string thumbnail_path { get; construct set; }
         public MatchType match_type { get; construct set; }
 
-        private AppInfo? appinfo = AppInfo.get_default_for_type ("x-scheme-handler/https", false);
-        private GLib.Settings gsettings = new GLib.Settings ("io.elementary.desktop.wingpanel.applications-menu");
+        private AppInfo? appinfo;
         private string search_uri;  // Stores final URL to launch in the browser
 
         /* Fields corresponding to those in the gsettings schema */
@@ -50,6 +51,7 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
         private bool web_search_enabled;
 
         public Result (string search) {
+            appinfo = AppInfo.get_default_for_type ("x-scheme-handler/https", false);
             if (appinfo == null) {
                 // No browser found
                 return;
@@ -69,16 +71,15 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
             this.icon_name = appinfo.get_icon ().to_string ();
             this.description = _("Search the web");
             this.has_thumbnail = false;
-            this.match_type = MatchType.SEARCH;
+            this.match_type = MatchType.ACTION;
         }
 
         public void execute (Match? match) {
-            if (!web_search_enabled) {
-                return;
-            }
-
             if (appinfo == null) {
                 // No browser found
+                return;
+            }
+            if (!web_search_enabled) {
                 return;
             }
 
@@ -88,7 +89,7 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
             try {
                 appinfo.launch_uris (list, null);
             } catch (Error e) {
-                warning ("%s\n", e.message);
+                error (e.message);
             }
         }
 
@@ -96,17 +97,13 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
             if (engine_id == CUSTOM_ENGINE_ID) {
                 return web_search_custom_url;
             }
-            if (!search_engines.has_key (engine_id)) {
+            else if (!search_engines.has_key (engine_id)) {
                 engine_id = DEFAULT_ENGINE_ID;
             }
             return search_engines[engine_id].url_template;
         }
 
         private string get_description_template (string engine_id) {
-            /* Protect against invalid gsettings -- should not happen unless gsettings are tampered with. */
-            if (engine_id == null || engine_id.chomp () == "" || !search_engines.has_key (engine_id)) {
-                engine_id = DEFAULT_ENGINE_ID;
-            }
             /* For custom search, rather than having the user bother to enter an ID/name for the search engine,
                simply use the domain name of the provider.
              */
@@ -116,6 +113,10 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
                 var domain_name = parts[2];
                 var result = _("Search for %s on") + " " + domain_name;
                 return result;
+            }
+            /* Protect against invalid gsettings -- should not happen unless gsettings are tampered with. */
+            if (engine_id == null || engine_id.chomp () == "" || !search_engines.has_key (engine_id)) {
+                engine_id = DEFAULT_ENGINE_ID;
             }
             return search_engines[engine_id].description_template;
         }
@@ -143,7 +144,6 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
         }
 
         search_engines = new Gee.HashMap<string, SearchEngine?> ();
-
         search_engines["google"] = new SearchEngine () {
             url_template = _("https://www.google.com/search?q={query}"),
             description_template = _("Search the web for %s with Google")
@@ -168,6 +168,7 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
             url_template = _("https://www.baidu.com/s?wd={query}"),
             description_template = _("Search the web for %s with Baidu")
         };
+
         register_plugin ();
     }
 
