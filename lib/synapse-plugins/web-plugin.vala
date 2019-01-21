@@ -27,12 +27,6 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
         public string description_template;
     }
 
-    public bool enabled { get; set; default = true; }
-    public void activate () { }
-    public void deactivate () { }
-
-    static Settings gsettings = new GLib.Settings ("io.elementary.desktop.wingpanel.applications-menu");
-
     public class Result : Object, Match {
         // From Match interface
         public string title { get; construct set; }
@@ -42,17 +36,17 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
         public string thumbnail_path { get; construct set; }
         public MatchType match_type { get; construct set; }
 
-        private AppInfo? appinfo;
-        private string search_uri;  // Stores final URL to launch in the browser
+        AppInfo? browser;
+        string search_url;  // Final URL to be launched in the browser
 
         /* Fields corresponding to those in the gsettings schema */
-        private string web_search_engine_id;
-        private string web_search_custom_url;
-        private bool web_search_enabled;
+        string web_search_engine_id;
+        string web_search_custom_url;
+        bool web_search_enabled;
 
         public Result (string search) {
-            appinfo = AppInfo.get_default_for_type ("x-scheme-handler/https", false);
-            if (appinfo == null) {
+            browser = AppInfo.get_default_for_type ("x-scheme-handler/https", false);
+            if (browser == null) {
                 // No browser found
                 return;
             }
@@ -65,17 +59,17 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
             string url_template = get_url_template (web_search_engine_id);
             string description_template = get_description_template (web_search_engine_id);
 
-            search_uri = url_template.replace ("{query}", Uri.escape_string (search));
+            search_url = url_template.replace ("{query}", Uri.escape_string (search));
 
             this.title = description_template.printf (search);
-            this.icon_name = appinfo.get_icon ().to_string ();
+            this.icon_name = browser.get_icon ().to_string ();
             this.description = _("Search the web");
             this.has_thumbnail = false;
             this.match_type = MatchType.ACTION;
         }
 
         public void execute (Match? match) {
-            if (appinfo == null) {
+            if (browser == null) {
                 // No browser found
                 return;
             }
@@ -84,16 +78,16 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
             }
 
             var list = new List<string> ();
-            list.append (search_uri);
+            list.append (search_url);
 
             try {
-                appinfo.launch_uris (list, null);
+                browser.launch_uris (list, null);
             } catch (Error e) {
                 error (e.message);
             }
         }
 
-        private string get_url_template (string engine_id) {
+        string get_url_template (string engine_id) {
             if (engine_id == CUSTOM_ENGINE_ID) {
                 return web_search_custom_url;
             }
@@ -103,15 +97,14 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
             return search_engines[engine_id].url_template;
         }
 
-        private string get_description_template (string engine_id) {
+        string get_description_template (string engine_id) {
             /* For custom search, rather than having the user bother to enter an ID/name for the search engine,
                simply use the domain name of the provider.
              */
             if (engine_id == CUSTOM_ENGINE_ID) {
                 var url_template = web_search_custom_url;
-                var parts = uri_regex.split (url_template);
-                var domain_name = parts[2];
-                var result = _("Search for %s on") + " " + domain_name;
+                var fqdn = get_name_from_url (url_template);
+                var result = _("Search for %s on") + " " + fqdn;
                 return result;
             }
             /* Protect against invalid gsettings -- should not happen unless gsettings are tampered with. */
@@ -122,10 +115,29 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
         }
     }
 
-    private const string DEFAULT_ENGINE_ID = "duckduckgo";
-    private const string CUSTOM_ENGINE_ID = "custom";
-    private static Gee.HashMap<string, SearchEngine> search_engines;
-    private static Regex uri_regex;
+    public bool enabled { get; set; default = true; }
+    public void activate () { }
+    public void deactivate () { }
+
+    const string DEFAULT_ENGINE_ID = "duckduckgo";
+    const string CUSTOM_ENGINE_ID = "custom";
+    static Gee.HashMap<string, SearchEngine> search_engines;  // Mapping of search engine metadata
+    static Regex url_regex;  // Regex for extracting FQDN portion of URL
+    static Settings gsettings = new GLib.Settings ("io.elementary.desktop.wingpanel.applications-menu");
+
+    public bool handles_query (Query query) {
+        return QueryFlags.TEXT in query.query_type;
+    }
+
+    public async ResultSet? search (Query query) throws SearchError {
+        if (query.query_string.char_count () < 2) {
+            return null;
+        }
+        ResultSet results = new ResultSet ();
+        Result search_result = new Result (query.query_string);
+        results.add (search_result, Match.Score.BELOW_AVERAGE);
+        return results;
+    }
 
     static void register_plugin () {
         DataSink.PluginRegistry.get_default ().register_plugin (
@@ -136,9 +148,23 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
             register_plugin);
     }
 
+    /* Gets an inferred name for a search engine at a given URL */
+    static string get_name_from_url (string url) {
+        var parts = url_regex.split (url);
+        if (parts.length > 2) {
+            /* Return FQDN */
+            return parts[2];
+        }
+        /* If no FQDN match found, just return the input.
+         * This should only happen if using a custom URL that is invalid.
+         */
+        return url;
+    }
+
     static construct {
         try {
-            uri_regex = new Regex ("""(\w+:\/\/)?([^/:\n]+)""");
+            /* First capture group is protocol, second is FQDN */
+            url_regex = new Regex ("""(\w+:\/\/)?([^/:\n]+)""");
         } catch (RegexError e) {
             error (e.message);
         }
@@ -170,19 +196,5 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
         };
 
         register_plugin ();
-    }
-
-    public bool handles_query (Query query) {
-        return QueryFlags.TEXT in query.query_type;
-    }
-
-    public async ResultSet? search (Query query) throws SearchError {
-        if (query.query_string.char_count () < 2) {
-            return null;
-        }
-        ResultSet results = new ResultSet ();
-        Result search_result = new Result (query.query_string);
-        results.add (search_result, Match.Score.BELOW_AVERAGE);
-        return results;
     }
 }
