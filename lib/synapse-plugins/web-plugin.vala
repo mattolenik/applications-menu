@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2019 Matthew Olenik <olenikm@gmail.com>
+ * Copyright (c) 2019 elementary LLC.
+ *               2019 Matthew Olenik <olenikm@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public
@@ -27,9 +28,7 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
     }
 
     public bool enabled { get; set; default = true; }
-
     public void activate () { }
-
     public void deactivate () { }
 
     public class Result : Object, Match {
@@ -41,39 +40,36 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
         public string thumbnail_path { get; construct set; }
         public MatchType match_type { get; construct set; }
 
-        private AppInfo? appinfo;
-        private GLib.Settings gsettings;
-        private string query;
-        private string search_uri;
+        private AppInfo? appinfo = AppInfo.get_default_for_type ("x-scheme-handler/https", false);
+        private GLib.Settings gsettings = new GLib.Settings ("io.elementary.desktop.wingpanel.applications-menu");
+        private string search_uri;  // Stores final URL to launch in the browser
+
+        /* Fields corresponding to those in the gsettings schema */
         private string web_search_engine_id;
         private string web_search_custom_url;
         private bool web_search_enabled;
 
         public Result (string search) {
-            gsettings = new GLib.Settings ("io.elementary.desktop.wingpanel.applications-menu");
-            web_search_engine_id = gsettings.get_string ("web-search-engine-id");
-            web_search_custom_url = gsettings.get_string ("web-search-custom-url");
-            web_search_enabled = gsettings.get_boolean ("web-search-enabled");
-            query = search;
-            appinfo = AppInfo.get_default_for_type ("x-scheme-handler/https", false);
             if (appinfo == null) {
                 // No browser found
                 return;
             }
+            web_search_enabled = gsettings.get_boolean ("web-search-enabled");
             if (!web_search_enabled) {
                 return;
             }
-            string engine_id = web_search_engine_id;
-            string url_template = get_url_template (engine_id);
-            string description_template = get_description_template (engine_id);
+            web_search_engine_id = gsettings.get_string ("web-search-engine-id");
+            web_search_custom_url = gsettings.get_string ("web-search-custom-url");
+            string url_template = get_url_template (web_search_engine_id);
+            string description_template = get_description_template (web_search_engine_id);
 
-            search_uri = url_template.replace ("{query}", Uri.escape_string (query));
+            search_uri = url_template.replace ("{query}", Uri.escape_string (search));
 
-            this.title = description_template.printf (query);
+            this.title = description_template.printf (search);
             this.icon_name = appinfo.get_icon ().to_string ();
             this.description = _("Search the web");
             this.has_thumbnail = false;
-            this.match_type = MatchType.ACTION;
+            this.match_type = MatchType.SEARCH;
         }
 
         public void execute (Match? match) {
@@ -107,7 +103,7 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
         }
 
         private string get_description_template (string engine_id) {
-            // Protect against invalid gsettings
+            /* Protect against invalid gsettings -- should not happen unless gsettings are tampered with. */
             if (engine_id == null || engine_id.chomp () == "" || !search_engines.has_key (engine_id)) {
                 engine_id = DEFAULT_ENGINE_ID;
             }
@@ -127,9 +123,7 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
 
     private const string DEFAULT_ENGINE_ID = "duckduckgo";
     private const string CUSTOM_ENGINE_ID = "custom";
-
     private static Gee.HashMap<string, SearchEngine> search_engines;
-
     private static Regex uri_regex;
 
     static void register_plugin () {
@@ -145,7 +139,7 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
         try {
             uri_regex = new Regex ("""(\w+:\/\/)?([^/:\n]+)""");
         } catch (RegexError e) {
-            debug (e.message);
+            error (e.message);
         }
 
         search_engines = new Gee.HashMap<string, SearchEngine?> ();

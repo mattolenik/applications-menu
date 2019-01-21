@@ -25,8 +25,8 @@
         <summary>String ID of the web search engine used by the Applications menu. Enter "custom" to utilize web-search-custom-url.</summary>
     </key>
     <key name="web-search-custom-url" type="s">
-        <default>""</default>
-        <summary>Custom search URL with the string {query} placed where the search terms should be inserted. e.g. "https://example.com/?search={query}"</summary>
+        <default>"https://example.com/?q={query}"</default>
+        <summary>Custom search URL with the string {query} placed where the search terms should be inserted.</summary>
     </key>
     <key name="web-search-enabled" type="b">
         <default>true</default>
