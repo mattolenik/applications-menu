@@ -77,13 +77,33 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
                 return;
             }
 
-            var list = new List<string> ();
-            list.append (search_url);
-
+            bool success;
+            string message = null;
             try {
-                browser.launch_uris (list, null);
+                var list = new List<string> ();
+                list.append (search_url);
+                success = browser.launch_uris (list, null);
             } catch (Error e) {
-                error (e.message);
+                warning (e.message);
+                message = e.message;
+                success = false;
+            }
+            /* There should rarely be a failure opening an https link, but if there is,
+               surface the error to the user in a MessageDialog.
+             */
+            if (!success) {
+                var error_message = _("Failed to open URL:\n'%s'\nwith browser '%s'");
+                var error_text = error_message.printf (search_url, browser.get_name ());
+                var dialog = new Granite.MessageDialog.with_image_from_icon_name (
+                    _("Web Search Failed"),
+                    error_text,
+                    "dialog-error");
+                if (message != null) {
+                    dialog.show_error_details (message);
+                }
+                dialog.run ();
+                dialog.destroy ();
+                warning (error_text);
             }
         }
 
@@ -111,8 +131,9 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
             if (engine_id == CUSTOM_ENGINE_ID) {
                 var url_template = web_search_custom_url;
                 var fqdn = get_name_from_url (url_template);
-                var result = _("Search for %s on") + " " + fqdn;
-                return result;
+                /// TRANSLATORS: This is the first part of the phrase "Search for %s on searchengine.com"
+                var custom_description = _("Search for %s on");
+                return custom_description + " " + fqdn;
             }
             /* Protect against invalid gsettings -- should not happen unless gsettings are tampered with. */
             if (engine_id == null || engine_id.chomp () == "" || !search_engines.has_key (engine_id)) {
