@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: slingshot\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2019-01-26 13:16-0800\n"
+"POT-Creation-Date: 2019-01-27 13:40-0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -305,83 +305,84 @@ msgstr ""
 msgid "AppCenter is not installed"
 msgstr ""
 
-#: lib/synapse-plugins/web-plugin.vala:66
-#: lib/synapse-plugins/web-plugin.vala:174
+#: lib/synapse-plugins/web-plugin.vala:70
+#: lib/synapse-plugins/web-plugin.vala:213
 msgid "Search the web"
 msgstr ""
 
-#: lib/synapse-plugins/web-plugin.vala:95
-#, c-format
+#: lib/synapse-plugins/web-plugin.vala:80
 msgid ""
-"Failed to open URL:\n"
-"'%s'\n"
-"with browser '%s'"
+"The custom search URL is invalid, please reconfigure it in System Settings."
 msgstr ""
 
-#: lib/synapse-plugins/web-plugin.vala:98
-msgid "Web Search Failed"
-msgstr ""
-
-#. / TRANSLATORS: This is the first part of the phrase "Search for %s on searchengine.com"
-#: lib/synapse-plugins/web-plugin.vala:135
+#. TRANSLATORS: This is the first part of the phrase "Search for %s on searchengine.com"
+#: lib/synapse-plugins/web-plugin.vala:107
 #, c-format
 msgid "Search for %s on"
 msgstr ""
 
-#: lib/synapse-plugins/web-plugin.vala:173
-msgid "Web"
+#: lib/synapse-plugins/web-plugin.vala:117
+msgid "Failed to launch web search"
 msgstr ""
 
-#: lib/synapse-plugins/web-plugin.vala:202
+#: lib/synapse-plugins/web-plugin.vala:121
+msgid "Web Search Failed"
+msgstr ""
+
+#: lib/synapse-plugins/web-plugin.vala:182
 msgid "https://www.google.com/search?q={query}"
 msgstr ""
 
-#: lib/synapse-plugins/web-plugin.vala:203
+#: lib/synapse-plugins/web-plugin.vala:183
 #, c-format
 msgid "Search the web for %s with Google"
 msgstr ""
 
-#: lib/synapse-plugins/web-plugin.vala:206
+#: lib/synapse-plugins/web-plugin.vala:186
 msgid "https://www.bing.com/search?q={query}"
 msgstr ""
 
-#: lib/synapse-plugins/web-plugin.vala:207
+#: lib/synapse-plugins/web-plugin.vala:187
 #, c-format
 msgid "Search the web for %s with Bing"
 msgstr ""
 
-#: lib/synapse-plugins/web-plugin.vala:210
+#: lib/synapse-plugins/web-plugin.vala:190
 msgid "https://duckduckgo.com/?q={query}"
 msgstr ""
 
-#: lib/synapse-plugins/web-plugin.vala:211
+#: lib/synapse-plugins/web-plugin.vala:191
 #, c-format
 msgid "Search the web for %s with DuckDuckGo"
 msgstr ""
 
-#: lib/synapse-plugins/web-plugin.vala:214
+#: lib/synapse-plugins/web-plugin.vala:194
 msgid "https://search.yahoo.com/search?p={query}"
 msgstr ""
 
-#: lib/synapse-plugins/web-plugin.vala:215
+#: lib/synapse-plugins/web-plugin.vala:195
 #, c-format
 msgid "Search the web for %s with Yahoo!"
 msgstr ""
 
-#: lib/synapse-plugins/web-plugin.vala:218
+#: lib/synapse-plugins/web-plugin.vala:198
 msgid "https://yandex.com/search/?text={query}"
 msgstr ""
 
-#: lib/synapse-plugins/web-plugin.vala:219
+#: lib/synapse-plugins/web-plugin.vala:199
 #, c-format
 msgid "Search the web for %s with Yandex"
 msgstr ""
 
-#: lib/synapse-plugins/web-plugin.vala:222
+#: lib/synapse-plugins/web-plugin.vala:202
 msgid "https://www.baidu.com/s?wd={query}"
 msgstr ""
 
-#: lib/synapse-plugins/web-plugin.vala:223
+#: lib/synapse-plugins/web-plugin.vala:203
 #, c-format
 msgid "Search the web for %s with Baidu"
+msgstr ""
+
+#: lib/synapse-plugins/web-plugin.vala:212
+msgid "Web"
 msgstr ""
