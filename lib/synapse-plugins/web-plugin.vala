@@ -38,114 +38,97 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
 
         AppInfo? browser;
         string search_url;  // Final URL to be launched in the browser
-
-        // Fields corresponding to those in the gsettings schema
-        string web_search_engine_id;
-        string web_search_custom_url;
         bool web_search_enabled;
+        const string DEFAULT_ENGINE_ID = "duckduckgo";
+        const string CUSTOM_ENGINE_ID = "custom";
 
         public Result (string search) {
             browser = AppInfo.get_default_for_type ("x-scheme-handler/https", false);
             if (browser == null) {
-                // No browser found
                 return;
             }
             web_search_enabled = gsettings.get_boolean ("web-search-enabled");
             if (!web_search_enabled) {
                 return;
             }
-            web_search_engine_id = gsettings.get_string ("web-search-engine-id");
-            web_search_custom_url = gsettings.get_string ("web-search-custom-url");
-            string url_template = get_url_template (web_search_engine_id);
-            string description_template = get_description_template (web_search_engine_id);
 
+            var engine_id = gsettings.get_string ("web-search-engine-id");
+            if (!search_engines.has_key (engine_id) && engine_id != CUSTOM_ENGINE_ID) {
+                /* This block should not be reached unless the setting have been tampered with. */
+                warning ("Invalid search engine found in gsettings, reverting to default");
+                engine_id = DEFAULT_ENGINE_ID;
+                gsettings.set_string ("web-search-engine-id", engine_id);
+            }
+
+            var custom_url = gsettings.get_string ("web-search-custom-url");
+            var url_template = engine_id == CUSTOM_ENGINE_ID ? custom_url : search_engines[engine_id].url_template;
+            var description_template = get_description_template (engine_id, custom_url);
             search_url = url_template.replace ("{query}", Uri.escape_string (search));
 
-            this.title = description_template.printf (search);
-            this.icon_name = browser.get_icon ().to_string ();
-            this.description = _("Search the web");
-            this.has_thumbnail = false;
-            this.match_type = MatchType.ACTION;
+            title = description_template.printf (search);
+            icon_name = browser.get_icon ().to_string ();
+            description = _("Search the web");
+            has_thumbnail = false;
+            match_type = MatchType.ACTION;
         }
 
         public void execute (Match? match) {
-            if (browser == null) {
-                // No browser found
+            if (!web_search_enabled || browser == null) {
                 return;
             }
-            if (!web_search_enabled) {
+            if (!url_regex.match (search_url)) {
+                show_error (_("The custom search URL is invalid, please reconfigure it in System Settings."));
                 return;
             }
-
-            bool success;
-            string message = null;
             try {
-                if (!valid_url_regex.match(search_url)) {
-                    message = _("The custom search URL is invalid, it must begin with http:// or https://");
-                    success = false;
-                } else {
-                    var list = new List<string> ();
-                    list.append (search_url);
-                    success = browser.launch_uris (list, null);
+                var list = new List<string> ();
+                list.append (search_url);
+                if (!browser.launch_uris (list, null)) {
+                    show_error (null);
+                    return;
                 }
             } catch (Error e) {
-                warning (e.message);
-                message = e.message;
-                success = false;
+                show_error (e.message);
+                return;
             }
-            // There should rarely be a failure opening an https link, but if there is,
-            // surface the error to the user in a MessageDialog.
-            if (!success) {
-                var error_message = _("Failed to launch web search");
-                var error_text = error_message.printf (search_url, browser.get_name ());
-                var dialog = new Granite.MessageDialog.with_image_from_icon_name (
-                    _("Web Search Failed"),
-                    error_text,
-                    "dialog-error");
-                if (message != null) {
-                    dialog.primary_label.max_width_chars = 60;
-                    dialog.primary_label.width_chars = 60;
-                    dialog.show_error_details (message);
-                }
-                dialog.run ();
-                dialog.destroy ();
-                warning (error_text);
-            }
-        }
-
-        /* Given an engine_id, find the correct URL template for that search engine.
-         * e.g. "https://example.com/{query}"
-         */
-        string get_url_template (string engine_id) {
-            if (engine_id == CUSTOM_ENGINE_ID) {
-                return web_search_custom_url;
-            }
-            /* Fall back to the default in the rare event that the ID is unrecognized. */
-            if (!search_engines.has_key (engine_id)) {
-                engine_id = DEFAULT_ENGINE_ID;
-            }
-            return search_engines[engine_id].url_template;
         }
 
         /* Given an engine_id, find the correct description phrasing template.
-         * This is the string in that UI that looks like "Search for %s on foo"
+         * This is the string in that UI that looks like "Search for %s on searchengine.com"
          */
-        string get_description_template (string engine_id) {
+        string get_description_template (string engine_id, string custom_url) {
             /* For custom search, rather than having the user bother to enter an ID/name for the search engine,
                simply use the domain name of the provider.
              */
             if (engine_id == CUSTOM_ENGINE_ID) {
-                var url_template = web_search_custom_url;
+                var url_template = custom_url;
                 var fqdn = get_name_from_url (url_template);
-                /// TRANSLATORS: This is the first part of the phrase "Search for %s on searchengine.com"
+                // TRANSLATORS: This is the first part of the phrase "Search for %s on searchengine.com"
                 var custom_description = _("Search for %s on");
                 return custom_description + " " + fqdn;
             }
-            /* Protect against invalid gsettings -- should not happen unless gsettings are tampered with. */
-            if (engine_id == null || engine_id.chomp () == "" || !search_engines.has_key (engine_id)) {
-                engine_id = DEFAULT_ENGINE_ID;
-            }
             return search_engines[engine_id].description_template;
+        }
+
+        /* There should rarely be a failure opening an https link, but if there is,
+         * surface the error to the user in a MessageDialog.
+         */
+        void show_error (string? message) {
+            var error_message = _("Failed to launch web search");
+            var error_text = error_message.printf (search_url, browser.get_name ());
+            warning (error_text);
+            var dialog = new Granite.MessageDialog.with_image_from_icon_name (
+                _("Web Search Failed"),
+                error_text,
+                "dialog-error");
+            if (message != null) {
+                /* Widen dialog when showing error details */
+                dialog.primary_label.max_width_chars = 60;
+                dialog.primary_label.width_chars = 60;
+                dialog.show_error_details (message);
+            }
+            dialog.run ();
+            dialog.destroy ();
         }
     }
 
@@ -153,12 +136,9 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
     public void activate () { }
     public void deactivate () { }
 
-    const string DEFAULT_ENGINE_ID = "duckduckgo";
-    const string CUSTOM_ENGINE_ID = "custom";
+    static Regex url_regex;                                   // Regex for extracting FQDN portion of URL
     static Gee.HashMap<string, SearchEngine> search_engines;  // Mapping of search engine metadata
-    static Regex url_regex;  // Regex for extracting FQDN portion of URL
-    static Regex valid_url_regex;  // Regex for checking if URL is valid
-    static Settings gsettings = new GLib.Settings ("io.elementary.desktop.wingpanel.applications-menu");
+    static Settings gsettings;
 
     public bool handles_query (Query query) {
         return QueryFlags.TEXT in query.query_type;
@@ -174,16 +154,7 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
         return results;
     }
 
-    static void register_plugin () {
-        DataSink.PluginRegistry.get_default ().register_plugin (
-            typeof (WebPlugin),
-            _("Web"),
-            _("Search the web"),
-            "web-browser",
-            register_plugin);
-    }
-
-    // Gets an inferred name for a search engine at a given URL
+    /* Gets an inferred name for a search engine at a given URL */
     static string get_name_from_url (string url) {
         var parts = url_regex.split (url);
         if (parts.length > 2) {
@@ -197,11 +168,11 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
     }
 
     static construct {
+        gsettings = new GLib.Settings ("io.elementary.desktop.wingpanel.applications-menu");
+
         try {
-            // First capture group is protocol, second is FQDN
-            url_regex = new Regex ("""(\w+:\/\/)?([^/:\n]+)""");
-            // Matches http:// or https://
-            valid_url_regex = new Regex ("""^https?://""");
+            /* First capture group is protocol, second is FQDN */
+            url_regex = new Regex ("""(\w+:\/\/)([^/:]+)""");
         } catch (RegexError e) {
             error (e.message);
         }
@@ -233,5 +204,14 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
         };
 
         register_plugin ();
+    }
+
+    static void register_plugin () {
+        DataSink.PluginRegistry.get_default ().register_plugin (
+            typeof (WebPlugin),
+            _("Web"),
+            _("Search the web"),
+            "web-browser",
+            register_plugin);
     }
 }
