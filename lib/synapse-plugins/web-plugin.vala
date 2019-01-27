@@ -39,7 +39,7 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
         AppInfo? browser;
         string search_url;  // Final URL to be launched in the browser
 
-        /* Fields corresponding to those in the gsettings schema */
+        // Fields corresponding to those in the gsettings schema
         string web_search_engine_id;
         string web_search_custom_url;
         bool web_search_enabled;
@@ -80,25 +80,31 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
             bool success;
             string message = null;
             try {
-                var list = new List<string> ();
-                list.append (search_url);
-                success = browser.launch_uris (list, null);
+                if (!valid_url_regex.match(search_url)) {
+                    message = _("The custom search URL is invalid, it must begin with http:// or https://");
+                    success = false;
+                } else {
+                    var list = new List<string> ();
+                    list.append (search_url);
+                    success = browser.launch_uris (list, null);
+                }
             } catch (Error e) {
                 warning (e.message);
                 message = e.message;
                 success = false;
             }
-            /* There should rarely be a failure opening an https link, but if there is,
-               surface the error to the user in a MessageDialog.
-             */
+            // There should rarely be a failure opening an https link, but if there is,
+            // surface the error to the user in a MessageDialog.
             if (!success) {
-                var error_message = _("Failed to open URL:\n'%s'\nwith browser '%s'");
+                var error_message = _("Failed to launch web search");
                 var error_text = error_message.printf (search_url, browser.get_name ());
                 var dialog = new Granite.MessageDialog.with_image_from_icon_name (
                     _("Web Search Failed"),
                     error_text,
                     "dialog-error");
                 if (message != null) {
+                    dialog.primary_label.max_width_chars = 60;
+                    dialog.primary_label.width_chars = 60;
                     dialog.show_error_details (message);
                 }
                 dialog.run ();
@@ -151,6 +157,7 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
     const string CUSTOM_ENGINE_ID = "custom";
     static Gee.HashMap<string, SearchEngine> search_engines;  // Mapping of search engine metadata
     static Regex url_regex;  // Regex for extracting FQDN portion of URL
+    static Regex valid_url_regex;  // Regex for checking if URL is valid
     static Settings gsettings = new GLib.Settings ("io.elementary.desktop.wingpanel.applications-menu");
 
     public bool handles_query (Query query) {
@@ -176,7 +183,7 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
             register_plugin);
     }
 
-    /* Gets an inferred name for a search engine at a given URL */
+    // Gets an inferred name for a search engine at a given URL
     static string get_name_from_url (string url) {
         var parts = url_regex.split (url);
         if (parts.length > 2) {
@@ -191,8 +198,10 @@ public class Synapse.WebPlugin: Object, Activatable, ItemProvider {
 
     static construct {
         try {
-            /* First capture group is protocol, second is FQDN */
+            // First capture group is protocol, second is FQDN
             url_regex = new Regex ("""(\w+:\/\/)?([^/:\n]+)""");
+            // Matches http:// or https://
+            valid_url_regex = new Regex ("""^https?://""");
         } catch (RegexError e) {
             error (e.message);
         }
